@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GraphQL Chat Interface</title>
+    <title>Groq Chat Interface</title>
+    <script src="https://cdn.jsdelivr.net/npm/groq-sdk@latest/dist/browser.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -22,6 +23,7 @@
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            position: relative;
         }
         .chat-box {
             height: 300px;
@@ -41,22 +43,34 @@
             background-color: #3a3a3a;
             color: #ffffff;
         }
-        #send-button {
+        #send-button, #generate-button {
             padding: 10px 20px;
             margin-left: 10px;
             border: none;
             border-radius: 4px;
-            background-color: #4CAF50;
             color: white;
             cursor: pointer;
         }
+        #send-button {
+            background-color: #4CAF50;
+        }
         #send-button:hover {
             background-color: #45a049;
+        }
+        #generate-button {
+            background-color: #3498db;
+            position: absolute;
+            right: 10px;
+            top: 10px;
+        }
+        #generate-button:hover {
+            background-color: #2980b9;
         }
     </style>
 </head>
 <body>
     <div class="chat-container">
+        <button id="generate-button">Generate</button>
         <div id="chat-box" class="chat-box"></div>
         <div class="input-container">
             <input type="text" id="user-input" placeholder="Type your message...">
@@ -68,26 +82,42 @@
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendButton = document.getElementById('send-button');
+        const generateButton = document.getElementById('generate-button');
+
+        // Initialize Groq client
+        const groq = new Groq.default({ apiKey: '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' });
 
         sendButton.addEventListener('click', sendMessage);
+        generateButton.addEventListener('click', generateContent);
         userInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendMessage();
             }
         });
 
-        function sendMessage() {
+        async function sendMessage() {
             const message = userInput.value.trim();
             if (message) {
                 appendMessage('User', message);
-                // Here you would typically send the message to your GraphQL API
-                // and handle the response
                 userInput.value = '';
-                // Simulating a response for demonstration
-                setTimeout(() => {
-                    appendMessage('API', 'This is a simulated response from the GraphQL API.');
-                }, 1000);
+                
+                try {
+                    const completion = await groq.chat.completions.create({
+                        messages: [{ role: "user", content: message }],
+                        model: "mixtral-8x7b-32768",
+                    });
+                    
+                    const response = completion.choices[0]?.message?.content || "No response";
+                    appendMessage('API', response);
+                } catch (error) {
+                    console.error('Error:', error);
+                    appendMessage('System', 'An error occurred while fetching the response.');
+                }
             }
+        }
+
+        function generateContent() {
+            appendMessage('System', 'Generate button clicked. Implement custom generation logic here.');
         }
 
         function appendMessage(sender, text) {
