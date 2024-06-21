@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Groq Chat Interface</title>
+    <title>GraphQL Chat Interface</title>
     <script src="https://cdn.jsdelivr.net/npm/groq-sdk@latest/dist/browser.js"></script>
     <style>
         body {
@@ -23,7 +23,6 @@
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
-            position: relative;
         }
         .chat-box {
             height: 300px;
@@ -59,9 +58,6 @@
         }
         #generate-button {
             background-color: #3498db;
-            position: absolute;
-            right: 10px;
-            top: 10px;
         }
         #generate-button:hover {
             background-color: #2980b9;
@@ -70,11 +66,11 @@
 </head>
 <body>
     <div class="chat-container">
-        <button id="generate-button">Generate</button>
         <div id="chat-box" class="chat-box"></div>
         <div class="input-container">
             <input type="text" id="user-input" placeholder="Type your message...">
             <button id="send-button">Send</button>
+            <button id="generate-button">Generate</button>
         </div>
     </div>
 
@@ -102,16 +98,21 @@
                 userInput.value = '';
                 
                 try {
+                    appendMessage('System', 'Sending request to API...');
+                    console.log('Sending message to Groq API:', message);
+                    
                     const completion = await groq.chat.completions.create({
                         messages: [{ role: "user", content: message }],
                         model: "mixtral-8x7b-32768",
                     });
                     
+                    console.log('Received response from Groq API:', completion);
+                    
                     const response = completion.choices[0]?.message?.content || "No response";
                     appendMessage('API', response);
                 } catch (error) {
                     console.error('Error:', error);
-                    appendMessage('System', 'An error occurred while fetching the response.');
+                    appendMessage('System', `An error occurred: ${error.message}`);
                 }
             }
         }
@@ -125,6 +126,7 @@
             messageElement.innerHTML = `<strong>${sender}:</strong> ${text}`;
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
+            console.log(`${sender}: ${text}`);
         }
     </script>
 </body>
