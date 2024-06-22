@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Groq Chat Interface</title>
+    <title>Hypno Bot Chat Interface</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -79,41 +79,47 @@
             }
         });
 
-        async function sendMessage() {
-            const message = userInput.value.trim();
-            if (message) {
-                appendMessage('User', message);
+        let conversationHistory = [
+            { role: "system", content: "You are Hypno Bot, a skilled hypnotherapist. Your task is to conduct a hypnotherapy session with the client. Start by warmly greeting the client and asking what they hope to achieve in today's session." }
+        ];
+
+        async function sendMessage(isInitial = false) {
+            let message;
+            if (isInitial) {
+                message = "Start session";
+            } else {
+                message = userInput.value.trim();
+                if (!message) return;
+                appendMessage('Client', message);
                 userInput.value = '';
-                
-                try {
-                    appendMessage('System', 'Sending request to API...');
-                    console.log('Sending message to Groq API:', message);
-                    
-                    const response = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${API_KEY}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            model: "mixtral-8x7b-32768",
-                            messages: [{ role: "user", content: message }]
-                        })
-                    });
+            }
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+            conversationHistory.push({ role: "user", content: message });
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: "mixtral-8x7b-32768",
+                        messages: conversationHistory
+                    })
+                });
 
-                    const data = await response.json();
-                    console.log('Received response from Groq API:', data);
-                    
-                    const aiResponse = data.choices[0]?.message?.content || "No response";
-                    appendMessage('API', aiResponse);
-                } catch (error) {
-                    console.error('Error:', error);
-                    appendMessage('System', `An error occurred: ${error.message}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
+                const data = await response.json();
+                const aiResponse = data.choices[0]?.message?.content || "No response";
+                appendMessage('Hypno Bot', aiResponse);
+                conversationHistory.push({ role: "assistant", content: aiResponse });
+            } catch (error) {
+                console.error('Error:', error);
+                appendMessage('System', `An error occurred: ${error.message}`);
             }
         }
 
@@ -122,8 +128,12 @@
             messageElement.innerHTML = `<strong>${sender}:</strong> ${text}`;
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
-            console.log(`${sender}: ${text}`);
         }
+
+        // Initiate the conversation when the page loads
+        window.onload = function() {
+            sendMessage(true);
+        };
     </script>
 </body>
 </html>
