@@ -41,7 +41,7 @@
             background-color: #3a3a3a;
             color: #ffffff;
         }
-        #send-button, #record-button {
+        #send-button, #record-button, #toggle-speech-button {
             padding: 10px 20px;
             margin-left: 10px;
             border: none;
@@ -50,7 +50,7 @@
             color: white;
             cursor: pointer;
         }
-        #send-button:hover, #record-button:hover {
+        #send-button:hover, #record-button:hover, #toggle-speech-button:hover {
             background-color: #45a049;
         }
         #record-button.recording {
@@ -65,6 +65,7 @@
             <input type="text" id="user-input" placeholder="Type your message...">
             <button id="send-button">Send</button>
             <button id="record-button">Record</button>
+            <button id="toggle-speech-button">Enable Speech</button>
         </div>
     </div>
 
@@ -73,6 +74,7 @@
         const userInput = document.getElementById('user-input');
         const sendButton = document.getElementById('send-button');
         const recordButton = document.getElementById('record-button');
+        const toggleSpeechButton = document.getElementById('toggle-speech-button');
 
         const API_KEY = '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';
         const CHAT_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -81,6 +83,8 @@
         let isRecording = false;
         let mediaRecorder;
         let audioChunks = [];
+        let isSpeechEnabled = false;
+        const synth = window.speechSynthesis;
 
         sendButton.addEventListener('click', sendMessage);
         userInput.addEventListener('keypress', function(e) {
@@ -90,6 +94,7 @@
         });
 
         recordButton.addEventListener('click', toggleRecording);
+        toggleSpeechButton.addEventListener('click', toggleSpeech);
 
         let conversationHistory = [
             { role: "system", content: "You are Hypno Bot, a skilled hypnotherapist. Your task is to conduct a hypnotherapy session with the client. Start by warmly greeting the client and asking what they hope to achieve in today's session." }
@@ -129,6 +134,10 @@
                 const aiResponse = data.choices[0]?.message?.content || "No response";
                 appendMessage('Hypno Bot', aiResponse);
                 conversationHistory.push({ role: "assistant", content: aiResponse });
+
+                if (isSpeechEnabled) {
+                    speakText(aiResponse);
+                }
             } catch (error) {
                 console.error('Error:', error);
                 appendMessage('System', `An error occurred: ${error.message}`);
@@ -199,6 +208,21 @@
                 console.error('Error:', error);
                 appendMessage('System', `An error occurred while processing your audio: ${error.message}`);
             }
+        }
+
+        function toggleSpeech() {
+            isSpeechEnabled = !isSpeechEnabled;
+            toggleSpeechButton.textContent = isSpeechEnabled ? 'Disable Speech' : 'Enable Speech';
+        }
+
+        function speakText(text) {
+            if (synth.speaking) {
+                synth.cancel();
+            }
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9; // Slightly slower rate for hypnotherapy
+            utterance.pitch = 1;
+            synth.speak(utterance);
         }
 
         // Initiate the conversation when the page loads
