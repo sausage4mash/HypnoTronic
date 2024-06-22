@@ -41,7 +41,7 @@
             background-color: #3a3a3a;
             color: #ffffff;
         }
-        #send-button {
+        #send-button, #toggle-speech {
             padding: 10px 20px;
             margin-left: 10px;
             border: none;
@@ -50,7 +50,7 @@
             color: white;
             cursor: pointer;
         }
-        #send-button:hover {
+        #send-button:hover, #toggle-speech:hover {
             background-color: #45a049;
         }
     </style>
@@ -61,6 +61,7 @@
         <div class="input-container">
             <input type="text" id="user-input" placeholder="Type your message...">
             <button id="send-button">Send</button>
+            <button id="toggle-speech">Toggle Speech</button>
         </div>
     </div>
 
@@ -68,15 +69,24 @@
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendButton = document.getElementById('send-button');
+        const toggleSpeechButton = document.getElementById('toggle-speech');
 
         const API_KEY = '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';
         const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
+        let isSpeechEnabled = true;
+        const synth = window.speechSynthesis;
 
         sendButton.addEventListener('click', sendMessage);
         userInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendMessage();
             }
+        });
+
+        toggleSpeechButton.addEventListener('click', function() {
+            isSpeechEnabled = !isSpeechEnabled;
+            toggleSpeechButton.textContent = isSpeechEnabled ? 'Disable Speech' : 'Enable Speech';
         });
 
         let conversationHistory = [
@@ -117,6 +127,10 @@
                 const aiResponse = data.choices[0]?.message?.content || "No response";
                 appendMessage('Hypno Bot', aiResponse);
                 conversationHistory.push({ role: "assistant", content: aiResponse });
+
+                if (isSpeechEnabled) {
+                    speakText(aiResponse);
+                }
             } catch (error) {
                 console.error('Error:', error);
                 appendMessage('System', `An error occurred: ${error.message}`);
@@ -128,6 +142,16 @@
             messageElement.innerHTML = `<strong>${sender}:</strong> ${text}`;
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function speakText(text) {
+            // Cancel any ongoing speech
+            synth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9; // Slightly slower rate for hypnotherapy
+            utterance.pitch = 1;
+            synth.speak(utterance);
         }
 
         // Initiate the conversation when the page loads
