@@ -41,7 +41,7 @@
             background-color: #3a3a3a;
             color: #ffffff;
         }
-        #send-button, #record-button, #toggle-speech-button {
+        #send-button, #record-button, #mute-button {
             padding: 10px 20px;
             margin-left: 10px;
             border: none;
@@ -50,10 +50,13 @@
             color: white;
             cursor: pointer;
         }
-        #send-button:hover, #record-button:hover, #toggle-speech-button:hover {
+        #send-button:hover, #record-button:hover, #mute-button:hover {
             background-color: #45a049;
         }
         #record-button.recording {
+            background-color: #ff4444;
+        }
+        #mute-button.muted {
             background-color: #ff4444;
         }
     </style>
@@ -65,7 +68,7 @@
             <input type="text" id="user-input" placeholder="Type your message...">
             <button id="send-button">Send</button>
             <button id="record-button">Record</button>
-            <button id="toggle-speech-button">Enable Speech</button>
+            <button id="mute-button">Mute</button>
         </div>
     </div>
 
@@ -74,7 +77,7 @@
         const userInput = document.getElementById('user-input');
         const sendButton = document.getElementById('send-button');
         const recordButton = document.getElementById('record-button');
-        const toggleSpeechButton = document.getElementById('toggle-speech-button');
+        const muteButton = document.getElementById('mute-button');
 
         const API_KEY = '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';
         const CHAT_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -83,7 +86,7 @@
         let isRecording = false;
         let mediaRecorder;
         let audioChunks = [];
-        let isSpeechEnabled = false;
+        let isMuted = false;
         const synth = window.speechSynthesis;
 
         sendButton.addEventListener('click', sendMessage);
@@ -94,7 +97,7 @@
         });
 
         recordButton.addEventListener('click', toggleRecording);
-        toggleSpeechButton.addEventListener('click', toggleSpeech);
+        muteButton.addEventListener('click', toggleMute);
 
         let conversationHistory = [
             { role: "system", content: "You are Hypno Bot, a skilled hypnotherapist. Your task is to conduct a hypnotherapy session with the client. Start by warmly greeting the client and asking what they hope to achieve in today's session." }
@@ -135,7 +138,7 @@
                 appendMessage('Hypno Bot', aiResponse);
                 conversationHistory.push({ role: "assistant", content: aiResponse });
 
-                if (isSpeechEnabled) {
+                if (!isMuted) {
                     speakText(aiResponse);
                 }
             } catch (error) {
@@ -210,9 +213,13 @@
             }
         }
 
-        function toggleSpeech() {
-            isSpeechEnabled = !isSpeechEnabled;
-            toggleSpeechButton.textContent = isSpeechEnabled ? 'Disable Speech' : 'Enable Speech';
+        function toggleMute() {
+            isMuted = !isMuted;
+            muteButton.textContent = isMuted ? 'Unmute' : 'Mute';
+            muteButton.classList.toggle('muted', isMuted);
+            if (isMuted) {
+                synth.cancel(); // Stop any ongoing speech
+            }
         }
 
         function speakText(text) {
